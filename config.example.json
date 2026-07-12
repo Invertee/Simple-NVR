@@ -1,0 +1,7 @@
+{
+  "recordingRoot": "D:\\CCTV",
+  "ffmpegPath": "ffmpeg",
+  "port": 3000,
+  "chunkMinutes": 10,
+  "cameras": []
+}

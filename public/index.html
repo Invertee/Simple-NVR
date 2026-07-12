@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CCTV DVR</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header><a class="brand" href="/">CCTV Recorder</a><nav><a href="/">Cameras</a><a href="/logs.html">Logs</a></nav></header>
+  <main>
+    <section class="hero"><div><h1></h1><p id="root">Loading configuration…</p></div><button id="open-add">Add camera</button></section>
+    <div id="notice" role="status"></div>
+    <section id="cameras" class="camera-grid"></section>
+    <section id="empty" class="empty" hidden><h2>No cameras yet</h2><p>Add an RTSP stream to begin recording in 10-minute chunks.</p></section>
+  </main>
+
+  <dialog id="camera-dialog">
+    <form id="camera-form">
+      <div class="dialog-head"><h2 id="form-title">Add camera</h2><button type="button" class="icon" id="close-dialog" aria-label="Close">×</button></div>
+      <input type="hidden" id="camera-id">
+      <label>Name<input id="name" required maxlength="80" placeholder="Front door"></label>
+      <label>RTSP URL<input id="url" required placeholder="rtsp://user:password@192.168.1.10:554/h264Preview_01_main"></label>
+      <div class="row"><label>Storage limit (GB)<input id="limit" required type="number" min="0.1" step="0.1" value="100"></label><label>Container<select id="container"><option value="mp4">MP4 (best for browser)</option><option value="mkv">MKV (more resilient)</option></select></label></div>
+      <label class="check"><input id="events-enabled" type="checkbox" checked><span>Store Reolink motion/person/animal markers</span></label>
+      <div class="row"><label>Camera API<select id="api-protocol"><option value="http">HTTP</option><option value="https">HTTPS</option></select></label><label>API port<input id="api-port" type="number" min="1" max="65535" value="80"></label></div>
+      <p class="hint">Credentials are stored locally in <code>data/config.json</code>. MP4 browser playback normally requires an H.264 camera stream.</p>
+      <div class="actions"><button type="button" class="secondary" id="cancel-dialog">Cancel</button><button type="submit">Save camera</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="files-dialog" class="wide">
+    <div class="dialog-head"><h2 id="files-title">Recordings</h2><button type="button" class="icon" id="close-files" aria-label="Close">×</button></div>
+    <div class="time-finder"><label>Jump to date and time<input id="find-time" type="datetime-local" step="1"></label><button id="find-time-button" type="button">Find recording</button></div>
+    <p id="find-time-message" class="hint"></p>
+    <video id="player" controls preload="metadata"></video>
+    <div id="files-list" class="files-list"></div>
+  </dialog>
+  <script src="/app.js"></script>
+</body>
+</html>

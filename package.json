@@ -1,0 +1,18 @@
+{
+  "name": "reolink-cctv-recorder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lightweight RTSP CCTV recorder with FFmpeg watchdog and disk quotas",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "check": "node --check src/server.js && node --check src/recorder-manager.js && node --check src/event-manager.js && node --check public/app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
