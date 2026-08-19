@@ -8,6 +8,7 @@ const RecorderManager = require('./recorder-manager');
 const EventManager = require('./event-manager');
 const { version: APP_VERSION } = require('../package.json');
 
+const APP_STARTED_AT = new Date().toISOString();
 const ROOT = path.resolve(__dirname, '..');
 const DATA_DIR = process.env.CCTV_DATA_DIR ? path.resolve(process.env.CCTV_DATA_DIR) : path.join(ROOT, 'data');
 const defaults = {
@@ -44,7 +45,7 @@ function validCamera(body) {
 }
 
 app.get('/api/config', (req, res) => {
-  res.json({ appVersion: APP_VERSION, recordingRoot: config.recordingRoot, chunkMinutes: config.chunkMinutes, cameras: config.cameras.map(publicCamera) });
+  res.json({ appVersion: APP_VERSION, appStartedAt: APP_STARTED_AT, recordingRoot: config.recordingRoot, chunkMinutes: config.chunkMinutes, cameras: config.cameras.map(publicCamera) });
 });
 
 app.get('/api/status', (req, res) => res.json(manager.status()));
