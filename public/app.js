@@ -12,6 +12,10 @@ let displayedFiles = [];
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const bytes = (value) => value >= 1024 ** 3 ? `${(value / 1024 ** 3).toFixed(2)} GB` : `${(value / 1024 ** 2).toFixed(1)} MB`;
 const duration = (seconds) => seconds < 60 ? `${seconds}s` : seconds < 3600 ? `${Math.floor(seconds / 60)}m` : `${Math.floor(seconds / 3600)}h ${Math.floor(seconds % 3600 / 60)}m`;
+const friendlyDateTime = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'medium', hour12: true });
+};
 const friendlyVideoName = (file) => {
   const start = fileStart(file);
   return Number.isFinite(start)
@@ -54,7 +58,7 @@ async function load() {
     const [config, nextStatuses] = await Promise.all([request('/api/config'), request('/api/status')]);
     cameras = config.cameras;
     statuses = nextStatuses;
-    document.querySelector('#root').textContent = `v${config.appVersion} · ${config.chunkMinutes}-minute stream-copy chunks · ${config.recordingRoot}`;
+    document.querySelector('#root').textContent = `v${config.appVersion} · Started ${friendlyDateTime(config.appStartedAt)} · ${config.chunkMinutes}-minute stream-copy chunks · ${config.recordingRoot}`;
     render();
   } catch (error) { notify(error.message, true); }
 }
