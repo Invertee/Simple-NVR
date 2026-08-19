@@ -54,7 +54,7 @@ async function load() {
     const [config, nextStatuses] = await Promise.all([request('/api/config'), request('/api/status')]);
     cameras = config.cameras;
     statuses = nextStatuses;
-    document.querySelector('#root').textContent = `10-minute stream-copy chunks · ${config.recordingRoot}`;
+    document.querySelector('#root').textContent = `v${config.appVersion} · ${config.chunkMinutes}-minute stream-copy chunks · ${config.recordingRoot}`;
     render();
   } catch (error) { notify(error.message, true); }
 }
