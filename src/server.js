@@ -6,6 +6,7 @@ const Store = require('./store');
 const Logger = require('./logger');
 const RecorderManager = require('./recorder-manager');
 const EventManager = require('./event-manager');
+const { version: APP_VERSION } = require('../package.json');
 
 const ROOT = path.resolve(__dirname, '..');
 const DATA_DIR = process.env.CCTV_DATA_DIR ? path.resolve(process.env.CCTV_DATA_DIR) : path.join(ROOT, 'data');
@@ -43,7 +44,7 @@ function validCamera(body) {
 }
 
 app.get('/api/config', (req, res) => {
-  res.json({ recordingRoot: config.recordingRoot, chunkMinutes: config.chunkMinutes, cameras: config.cameras.map(publicCamera) });
+  res.json({ appVersion: APP_VERSION, recordingRoot: config.recordingRoot, chunkMinutes: config.chunkMinutes, cameras: config.cameras.map(publicCamera) });
 });
 
 app.get('/api/status', (req, res) => res.json(manager.status()));
@@ -160,7 +161,7 @@ app.use((error, req, res, next) => {
 
 fs.mkdirSync(config.recordingRoot, { recursive: true });
 const server = app.listen(config.port, () => {
-  logger.info(`CCTV recorder listening on http://localhost:${config.port}; recordings: ${config.recordingRoot}`);
+  logger.info(`CCTV recorder v${APP_VERSION} listening on http://localhost:${config.port}; recordings: ${config.recordingRoot}`);
   manager.start();
   eventManager.start();
 });
