@@ -3,6 +3,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.mkv']);
+const WATCHDOG_INTERVAL_MS = 30_000;
+const WATCHDOG_STALL_MS = 180_000;
 
 function safeId(value) {
   return String(value).replace(/[^a-zA-Z0-9_-]/g, '');
@@ -19,18 +21,22 @@ class RecorderManager {
     this.workers = new Map();
     this.stopping = false;
     this.maintenanceTimer = null;
+    this.watchdogTimer = null;
   }
 
   start() {
     this.stopping = false;
     for (const camera of this.getConfig().cameras) this.startCamera(camera.id);
     this.maintenanceTimer = setInterval(() => this.maintain().catch((e) => this.logger.error(e.message)), 60_000);
+    this.watchdogTimer = setInterval(() => this.watchdog().catch((e) => this.logger.error(`Watchdog failed: ${e.message}`)), WATCHDOG_INTERVAL_MS);
     this.maintain().catch((e) => this.logger.error(e.message));
+    this.watchdog().catch((e) => this.logger.error(`Watchdog failed: ${e.message}`));
   }
 
   async stop() {
     this.stopping = true;
     clearInterval(this.maintenanceTimer);
+    clearInterval(this.watchdogTimer);
     for (const worker of this.workers.values()) {
       clearTimeout(worker.restartTimer);
       if (worker.process && !worker.process.killed) worker.process.kill('SIGTERM');
@@ -76,7 +82,16 @@ class RecorderManager {
 
     this.logger.info(`Starting FFmpeg recorder for ${camera.name}`, id);
     const child = spawn(config.ffmpegPath || 'ffmpeg', args, { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
-    const worker = { process: child, startedAt: Date.now(), intentionalStop: false, restartTimer: null, lastError: '' };
+    const worker = {
+      process: child,
+      startedAt: Date.now(),
+      intentionalStop: false,
+      restartTimer: null,
+      lastError: '',
+      lastProgressAt: Date.now(),
+      lastObservedFile: null,
+      lastObservedSize: 0
+    };
     this.workers.set(id, worker);
 
     child.stderr.setEncoding('utf8');
@@ -121,6 +136,7 @@ class RecorderManager {
         running: Boolean(worker?.process && !worker.process.killed),
         pid: worker?.process?.pid || null,
         uptimeSeconds: worker?.startedAt ? Math.floor((now - worker.startedAt) / 1000) : 0,
+        lastProgressSeconds: worker?.lastProgressAt ? Math.floor((now - worker.lastProgressAt) / 1000) : null,
         lastError: worker?.lastError || ''
       };
     });
@@ -143,6 +159,55 @@ class RecorderManager {
     if (path.basename(fileName) !== fileName || !VIDEO_EXTENSIONS.has(path.extname(fileName).toLowerCase())) return null;
     if (!this.getCamera(cameraId)) return null;
     return path.join(this.getConfig().recordingRoot, safeId(cameraId), fileName);
+  }
+
+  async latestFileProgress(cameraId) {
+    const dir = path.join(this.getConfig().recordingRoot, safeId(cameraId));
+    let names;
+    try { names = await fs.promises.readdir(dir); } catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+    const name = names.filter((item) => VIDEO_EXTENSIONS.has(path.extname(item).toLowerCase())).sort().at(-1);
+    if (!name) return null;
+    try {
+      const stat = await fs.promises.stat(path.join(dir, name));
+      return { name, size: stat.size };
+    } catch (error) {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    }
+  }
+
+  async watchdog() {
+    for (const camera of this.getConfig().cameras) {
+      if (camera.enabled === false) continue;
+      const worker = this.workers.get(camera.id);
+      if (!worker?.process || worker.process.killed) continue;
+
+      try {
+        const latest = await this.latestFileProgress(camera.id);
+        if (worker.lastObservedFile === null) {
+          worker.lastObservedFile = latest?.name || '';
+          worker.lastObservedSize = latest?.size || 0;
+          continue;
+        }
+
+        const progressed = latest && (latest.name !== worker.lastObservedFile || latest.size !== worker.lastObservedSize);
+        if (progressed) {
+          worker.lastObservedFile = latest.name;
+          worker.lastObservedSize = latest.size;
+          worker.lastProgressAt = Date.now();
+          continue;
+        }
+
+        const stalledMs = Date.now() - worker.lastProgressAt;
+        if (stalledMs >= WATCHDOG_STALL_MS) {
+          const stalledSeconds = Math.floor(stalledMs / 1000);
+          this.logger.error(`Watchdog detected no recording progress for ${stalledSeconds}s; restarting FFmpeg`, camera.id);
+          this.restartCamera(camera.id);
+        }
+      } catch (error) {
+        this.logger.warn(`Watchdog could not check recording progress: ${error.message}`, camera.id);
+      }
+    }
   }
 
   async maintain() {
