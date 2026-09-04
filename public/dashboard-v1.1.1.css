@@ -1,0 +1,90 @@
+/* Simple NVR dashboard layout v1.1.1 */
+
+@media (min-width:1051px) {
+  html { height:100%; }
+  body.dashboard-page { height:100vh; min-height:0; overflow:hidden; }
+  .dashboard-page header { flex:none; }
+  .dashboard-page main.dashboard {
+    height:calc(100vh - 64px);
+    max-height:calc(100vh - 64px);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    padding-bottom:24px;
+  }
+  .dashboard-page .topbar,
+  .dashboard-page .app-meta,
+  .dashboard-page .camera-warning { flex:none; }
+  .dashboard-page .workspace {
+    flex:1;
+    min-height:0;
+    align-items:stretch;
+    overflow:hidden;
+  }
+  .dashboard-page .viewer-column {
+    height:100%;
+    min-height:0;
+    grid-template-rows:minmax(0,1fr) auto;
+  }
+  .dashboard-page .viewer-panel {
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .dashboard-page .viewer-panel .panel-head,
+  .dashboard-page .playback-strip { flex:none; }
+  .dashboard-page .video-stage {
+    flex:1;
+    min-height:120px;
+    aspect-ratio:auto;
+  }
+  .dashboard-page .recordings-panel {
+    height:100%;
+    min-height:0;
+    max-height:none;
+    position:static;
+    top:auto;
+    overflow:hidden;
+  }
+  .dashboard-page .recordings-panel .files-list {
+    flex:1;
+    min-height:0;
+    max-height:none;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+  }
+}
+
+.dashboard-page .video-stage video {
+  transform-origin:center center;
+  will-change:transform;
+}
+
+.dashboard-page .video-stage.video-zoomed {
+  cursor:grab;
+  user-select:none;
+}
+
+.dashboard-page .video-stage.video-panning { cursor:grabbing; }
+
+.video-zoom-reset {
+  position:absolute;
+  z-index:8;
+  top:10px;
+  right:10px;
+  padding:6px 9px;
+  border:1px solid #ffffff2b;
+  border-radius:7px;
+  background:#0a0e12d9;
+  color:var(--text);
+  font-size:11px;
+  font-weight:700;
+  line-height:1;
+  box-shadow:0 3px 12px #0008;
+  backdrop-filter:blur(5px);
+}
+
+.video-zoom-reset:hover { opacity:1; background:#151c23e8; }
+.video-zoom-reset[hidden] { display:none; }
