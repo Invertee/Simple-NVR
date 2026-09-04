@@ -3,21 +3,112 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>DVRer</title>
-  <link rel="stylesheet" href="/styles.css">
+  <title>CCTV Recorder</title>
+  <link rel="stylesheet" href="/styles.css?v=1.1.0">
 </head>
 <body>
-  <header><a class="brand" href="/">CCTV Recorder</a><nav><a href="/">Cameras</a><a href="/logs.html">Logs</a></nav></header>
-  <main>
-    <section class="hero"><div><h1></h1><p id="root">Loading configuration…</p></div><button id="open-add">Add camera</button></section>
+  <header>
+    <a class="brand" href="/">CCTV Recorder</a>
+    <nav><a href="/">Cameras</a><a href="/logs.html">Logs</a></nav>
+  </header>
+
+  <main class="dashboard">
+    <section class="topbar">
+      <div class="topbar-main">
+        <label class="camera-picker">Camera<select id="camera-select" aria-label="Select camera"></select></label>
+        <div id="camera-status" class="camera-status"></div>
+      </div>
+      <div class="topbar-actions">
+        <button id="edit-camera" type="button" class="secondary">Edit camera</button>
+        <button id="open-add" type="button">Add camera</button>
+      </div>
+    </section>
+
+    <p id="root" class="app-meta">Loading configuration...</p>
+    <p id="camera-warning" class="camera-warning" hidden></p>
     <div id="notice" role="status"></div>
-    <section id="cameras" class="camera-grid"></section>
-    <section id="empty" class="empty" hidden><h2>No cameras yet</h2><p>Add an RTSP stream to begin recording in 10-minute chunks.</p></section>
+
+    <section id="empty" class="empty" hidden>
+      <h2>No cameras yet</h2>
+      <p>Add an RTSP stream to begin recording in 10-minute chunks.</p>
+    </section>
+
+    <section id="workspace" class="workspace" hidden>
+      <div class="viewer-column">
+        <article class="panel viewer-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Playback</p>
+              <h1 id="viewer-title">Camera</h1>
+            </div>
+            <p id="viewer-meta" class="panel-meta"></p>
+          </div>
+
+          <div class="video-stage">
+            <video id="player" controls preload="metadata"></video>
+            <div id="video-placeholder" class="video-placeholder">
+              <strong>Select a recording or scrub the timeline</strong>
+              <span>Playback will appear here.</span>
+            </div>
+          </div>
+
+          <div class="playback-strip">
+            <div>
+              <span class="playback-label">Position</span>
+              <strong id="playback-time">No recording selected</strong>
+            </div>
+            <span id="playback-file" class="playback-file"></span>
+          </div>
+        </article>
+
+        <article class="panel timeline-panel">
+          <div class="timeline-toolbar">
+            <div>
+              <p class="eyebrow">Timeline</p>
+              <h2 id="timeline-title">Recording coverage</h2>
+            </div>
+            <div class="date-controls">
+              <button id="previous-day" type="button" class="secondary icon-button" aria-label="Previous day">&lsaquo;</button>
+              <input id="timeline-date" type="date" aria-label="Timeline date">
+              <button id="next-day" type="button" class="secondary icon-button" aria-label="Next day">&rsaquo;</button>
+              <button id="latest-day" type="button" class="secondary">Latest</button>
+            </div>
+          </div>
+
+          <div class="timeline-shell">
+            <div class="timeline-hours" aria-hidden="true"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+            <div id="timeline-track" class="timeline-track" role="slider" tabindex="0" aria-label="Recording timeline" aria-valuemin="0" aria-valuemax="86400" aria-valuenow="0">
+              <div id="timeline-recordings" class="timeline-layer"></div>
+              <div id="timeline-gaps" class="timeline-layer"></div>
+              <div id="timeline-events" class="timeline-layer"></div>
+              <div id="timeline-playhead" class="timeline-playhead" hidden></div>
+            </div>
+          </div>
+
+          <div class="timeline-footer">
+            <div class="timeline-legend"><span><i class="legend-recorded"></i>Recorded</span><span><i class="legend-gap"></i>Gap</span><span><i class="legend-event"></i>Event</span></div>
+            <strong id="timeline-time">Scrub to choose a time</strong>
+          </div>
+          <p id="timeline-summary" class="timeline-summary"></p>
+        </article>
+      </div>
+
+      <aside class="panel recordings-panel">
+        <div class="panel-head recordings-head">
+          <div>
+            <p class="eyebrow">Recordings</p>
+            <h2 id="recordings-title">Selected day</h2>
+          </div>
+          <span id="recordings-count" class="count-badge">0</span>
+        </div>
+        <div id="files-list" class="files-list"></div>
+      </aside>
+    </section>
   </main>
 
   <dialog id="camera-dialog">
     <form id="camera-form">
-      <div class="dialog-head"><h2 id="form-title">Add camera</h2><button type="button" class="icon" id="close-dialog" aria-label="Close">×</button></div>
+      <div class="dialog-head"><h2 id="form-title">Add camera</h2><button type="button" class="icon" id="close-dialog" aria-label="Close">&times;</button></div>
       <input type="hidden" id="camera-id">
       <label>Name<input id="name" required maxlength="80" placeholder="Front door"></label>
       <label>RTSP URL<input id="url" required placeholder="rtsp://user:password@192.168.1.10:554/h264Preview_01_main"></label>
@@ -29,13 +120,6 @@
     </form>
   </dialog>
 
-  <dialog id="files-dialog" class="wide">
-    <div class="dialog-head"><h2 id="files-title">Recordings</h2><button type="button" class="icon" id="close-files" aria-label="Close">×</button></div>
-    <div class="time-finder"><label>Jump to date and time<input id="find-time" type="datetime-local" step="1"></label><button id="find-time-button" type="button">Find recording</button></div>
-    <p id="find-time-message" class="hint"></p>
-    <video id="player" controls preload="metadata"></video>
-    <div id="files-list" class="files-list"></div>
-  </dialog>
-  <script src="/app.js?v=1.0.0-watchdog2"></script>
+  <script src="/app.js?v=1.1.0"></script>
 </body>
 </html>

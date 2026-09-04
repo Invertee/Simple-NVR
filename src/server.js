@@ -83,11 +83,11 @@ app.put('/api/cameras/:id', (req, res) => {
     url: !req.body.url || req.body.url.includes(':***@') ? old.url : req.body.url,
     maxSizeGb: req.body.maxSizeGb ?? old.maxSizeGb,
     container: req.body.container ?? old.container,
-    enabled: req.body.enabled ?? old.enabled
-    ,eventsEnabled: req.body.eventsEnabled ?? old.eventsEnabled
-    ,apiProtocol: req.body.apiProtocol ?? old.apiProtocol ?? 'http'
-    ,apiPort: Number(req.body.apiPort ?? old.apiPort) || 80
-    ,apiChannel: Number(req.body.apiChannel ?? old.apiChannel) || 0
+    enabled: req.body.enabled ?? old.enabled,
+    eventsEnabled: req.body.eventsEnabled ?? old.eventsEnabled,
+    apiProtocol: req.body.apiProtocol ?? old.apiProtocol ?? 'http',
+    apiPort: Number(req.body.apiPort ?? old.apiPort) || 80,
+    apiChannel: Number(req.body.apiChannel ?? old.apiChannel) || 0
   };
   const error = validCamera(candidate);
   if (error) return res.status(400).json({ error });
@@ -118,7 +118,14 @@ app.get('/api/cameras/:id/files', async (req, res, next) => {
     const decorated = await Promise.all(files.map(async ({ mtimeMs, ...file }) => {
       const match = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/.exec(file.name);
       const start = match ? new Date(+match[1], +match[2] - 1, +match[3], +match[4], +match[5], +match[6]).getTime() : mtimeMs - chunkMs;
-      return { ...file, events: await eventManager.list(req.params.id, start, start + chunkMs) };
+      const end = Math.min(start + chunkMs, Math.max(start + 1000, mtimeMs));
+      return {
+        ...file,
+        startTime: new Date(start).toISOString(),
+        endTime: new Date(end).toISOString(),
+        durationSeconds: Math.max(1, Math.round((end - start) / 1000)),
+        events: await eventManager.list(req.params.id, start, start + chunkMs)
+      };
     }));
     res.json(decorated);
   } catch (error) { next(error); }

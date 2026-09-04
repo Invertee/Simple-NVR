@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logs · CCTV Recorder</title><link rel="stylesheet" href="/styles.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logs - CCTV Recorder</title><link rel="stylesheet" href="/styles.css?v=1.1.0"></head>
 <body>
   <header><a class="brand" href="/">CCTV Recorder</a><nav><a href="/">Cameras</a><a href="/logs.html">Logs</a></nav></header>
-  <main><section class="hero"><div><h1>Application logs</h1><p id="log-subtitle">Recorder starts, watchdog restarts, FFmpeg warnings, and quota cleanup.</p></div><button id="refresh">Refresh</button></section><div id="logs" class="logs"></div></main>
+  <main class="dashboard"><section class="topbar"><div><h1>Application logs</h1><p id="log-subtitle">Recorder starts, watchdog restarts, FFmpeg warnings, and quota cleanup.</p></div><button id="refresh">Refresh</button></section><div id="logs" class="logs" style="margin-top:22px"></div></main>
   <script>
     const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const friendlyDateTime = (value) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'medium', hour12: true }); };
-    async function loadVersion() { try { const r = await fetch('/api/config'); if (!r.ok) return; const config = await r.json(); document.querySelector('#log-subtitle').textContent = `v${config.appVersion} · Started ${friendlyDateTime(config.appStartedAt)} · Recorder starts, watchdog restarts, FFmpeg warnings, and quota cleanup.`; } catch {} }
+    async function loadVersion() { try { const r = await fetch('/api/config'); if (!r.ok) return; const config = await r.json(); document.querySelector('#log-subtitle').textContent = `v${config.appVersion} - Started ${friendlyDateTime(config.appStartedAt)} - Recorder starts, watchdog restarts, FFmpeg warnings, and quota cleanup.`; } catch {} }
     async function load() { const r = await fetch('/api/logs?limit=500'); const entries = await r.json(); document.querySelector('#logs').innerHTML = entries.map(e => `<div class="log ${e.level}"><time>${escapeHtml(new Date(e.timestamp).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'medium', hour12: true }))}</time><b>${escapeHtml(e.level)}</b><span>${escapeHtml(e.cameraName ? `[${e.cameraName}] ` : e.cameraId ? `[${e.cameraId.slice(0,8)}] ` : '')}${escapeHtml(e.message)}</span></div>`).join('') || '<p>No logs yet.</p>'; }
     document.querySelector('#refresh').onclick = load; loadVersion(); load(); setInterval(load, 10000);
   </script>
